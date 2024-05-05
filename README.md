@@ -14,14 +14,15 @@
 - /（root）
   - `gsi-dem-terrain.js`: 地理院標高タイルをMaplibre GL JSで扱うためのスクリプト
     - 参照URL: https://qiita.com/Kanahiro/items/8306e60e87746ca8a584
-  - `index.html`: Web地図を表示
-  - `style.css`: CSSを定義
+  - `gsi-std.json`: 地理院標準地図の定義
+  - `index.html`: Web地図の表示
+  - `style.css`: CSSの定義
 - geofiles/
-  - 地形解説地点を示すPMTilesおよびGeojsonファイルを格納
+  - 地形解説地点を示すPMTilesおよびGeoJSONファイルの格納
 - img/
-  - アイコン画像ファイルを格納
+  - アイコン画像ファイルの格納
 - mapimg/
-  - 地形解説ポップアップで使用する画像ファイルを格納
+  - 地形解説ポップアップで使用する画像ファイルの格納
 
 ## ライブラリ
 - MapLibre GL JS 3.2.0
