@@ -1,7 +1,7 @@
 # 日本地形ガイドMAP
 日めくり地形MAPサイトのソースコードです。
 
-## サイト
+## サイトの基本情報
 - サイト名: 日本地形ガイドMAP
 - URL: https://tochirinuru.com/lfa/
 
@@ -12,10 +12,11 @@
 
 ## ディレクトリ・ファイル構成
 - /（root）
-  - `gsi-dem-terrain.js`: 地理院標高タイルをMaplibre GL JSで扱うためのスクリプト
+  - `gsi-dem-terrain.js`: 地理院標高タイルをMaplibre GL JSで扱うための定義
     - 参照URL: https://qiita.com/Kanahiro/items/8306e60e87746ca8a584
   - `gsi-std.json`: 地理院標準地図の定義
   - `index.html`: Web地図の表示
+  - `overview.html`: サイトの説明
   - `style.css`: CSSの定義
 - geofiles/
   - 地形解説地点を示すPMTilesおよびGeoJSONファイルの格納
@@ -25,7 +26,7 @@
   - 地形解説ポップアップで使用する画像ファイルの格納
 
 ## ライブラリ
-- MapLibre GL JS 3.2.0
+- MapLibre GL JS Ver.3.2.0
   - URL: https://maplibre.org/projects/maplibre-gl-js/
 
 ## ソース
@@ -36,7 +37,7 @@
 
 ### 標高データ
 - 国土地理院（標高タイル）
-  - 標高タイル
+  - 地理院標高タイル
     - URL: https://maps.gsi.go.jp/development/demtile.html
     - 数値情報（国土基本情報）基盤地図情報（数値標高モデル）
     - 測量法に基づく国土地理院長承認（使用）R 5JHs 268
@@ -67,3 +68,6 @@
     - URL: https://www.gsi.go.jp/common/000084060.pdf
   - 数値情報25000（土地条件）
     - URL: https://cyberjapandata.gsi.go.jp/legend/lcm25k_2012/lc_legend.pdf
+
+## 更新履歴
+- 2024-05-05（Ver.1.0.0）: サイト公開
