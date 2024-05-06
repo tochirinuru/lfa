@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+	<meta charset="utf-8">
+	<title>日本地形ガイドMAP</title>
+	<meta name="description" content="Xポスト（Twitterツイート）上で日本各地の地形を簡単に解説している地点を表示するWeb地図サイトです。">
+	<link href="style.css" type="text/css" rel="stylesheet">
+	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes">
+	<!-- MapLibre -->
+	<script src="https://unpkg.com/maplibre-gl@3.2.0/dist/maplibre-gl.js"></script>
+	<link href="https://unpkg.com/maplibre-gl@3.2.0/dist/maplibre-gl.css" rel="stylesheet" />
+	<!-- gsi-dem-terrain（地理院標高タイルのTerrainRGB変換） -->
+	<script src="gsi-dem-terrain.js"></script>
+	<!-- PMTiles -->
+	<script src="https://unpkg.com/pmtiles@2.7.0/dist/index.js"></script>
+</head>
+
+<body>
+
+	<div id="map">
+	</div>
+	<!-- サイドバートグル表示設定 -->
+	<input type="checkbox" class="openSidebarMenu" id="openSidebarMenu" checked="checked">
+		<label for="openSidebarMenu" class="sidebarIconToggle">
+			<div class="sidebar-toggle rounded-rect left">&gt;</div>
+		</label>
+	<!-- サイドバー表示設定 -->
+	<div class="sidebarMenu">
+		<div class="sidebar left">
+			<div class="sidebar-content rounded-rect flex-top">
+				<div class="sidebar-items top">
+					<div class="sidebar-title">日本地形ガイドMAP</div>
+					<div class="sidebar-version">Ver.1.0.0</div>
+					<div class="overview-link overview-iconimg"><a href="./overview.html" title="サイト情報" target="_blank"><img src="./img/info_icon.png" alt="サイト情報"></a>&nbsp;<a href="./overview.html" title="サイト情報" target="_blank">このサイトについて</a></div>
+					<!-- 地形解説チェックボックス -->
+					<div class="sidebar-category">▼&nbsp;地形解説</div>
+					<table class="sidebar-items-table">
+						<tr>
+							<td class="sidebar-items-tdata">
+								<div class="sidebar-layer-label overlay-label">
+								<label for="cblfalist">
+									<input type="checkbox" class="layer-indication" id="cblfalist" onchange="switchlayer('lfalist')" checked >&nbsp;地形解説 <a href="https://twitter.com/search?q=%23%E6%97%A5%E3%82%81%E3%81%8F%E3%82%8A%E5%9C%B0%E5%BD%A2&src=typed_query&f=live" title="X（Twitter） #日めくり地形" target="_blank">#日めくり地形</a>
+								</label>
+								</div>
+								<div class="infoicon">
+									<input type="checkbox" class="popup" id="popup_article">
+									<label class="popup-open iconimg" for="popup_article"><img src="./img/info_icon.png" alt="地図情報" title="地図情報"></label>
+									<div class="popup-overlay">
+										<div class="popup-window rounded-rect">
+											<p class="popup-title_1">地形解説 #日めくり地形</p>
+											<p class="popup-text">地理院地図の「地形分類」をもとにXポスト（Twitterツイート）上で日本各地の地形を簡単に解説している地点です。</p>
+											<label class="popup-close" for="popup_article">
+												<svg width="10" height="10" xmlns="http://www.w3.org/2000/svg">
+													<line x1="0" y1="0" x2="10" y2="10" stroke="black" stroke-width="2"></line>
+													<line x1="0" y1="10" x2="10" y2="0" stroke="black" stroke-width="2"></line>
+												</svg>
+											</label>
+										</div>
+									</div>
+								</div>
+							</td>
+						</tr>
+					</table>
+					<!-- 3D表示高さ倍率スライダー -->
+					<div class="sidebar-category">▼&nbsp;3D表示</div>
+					<table class="sidebar-items-table">
+						<!-- 3D表示高さ倍率スライダー -->
+						<tr>
+							<td class="sidebar-items-tdata">
+								<div class="sidebar-layer-label range-label">
+									<label>高さ倍率</label>
+								</div>
+								<div class="sidebar-range-label">
+									<label>
+										<input class="sidebar-range" id="slider_terrain" type="range" min="0" max="10" step="0" value="4" alt="高さ倍率" title="高さ倍率">
+										<span id="slider-value_terrain" alt="高さ倍率" title="高さ倍率">4倍</span>
+									</label>
+								</div>
+								<div class="infoicon">
+									<input type="checkbox" class="popup" id="popup_terrain">
+									<label class="popup-open iconimg" for="popup_terrain"><img src="./img/info_icon.png" alt="地図情報" title="地図情報"></label>
+									<div class="popup-overlay">
+										<div class="popup-window rounded-rect">
+											<p class="popup-title_1">3D高さ倍率</p>
+											<p class="popup-text">地理院地図の「標高タイル」の標高値による3D表示の高さ倍率を調整できます。0倍に設定すると2D表示になります。</p>
+											<p class="popup-text">【設定可能範囲】 0～10倍</p>
+											<p class="popup-text">【参考】<br><a href="https://maps.gsi.go.jp/development/demtile.html" title="国土地理院「標高タイルの詳細仕様」" target="_blank">国土地理院「標高タイルの詳細仕様」</a></p>
+											<label class="popup-close" for="popup_terrain">
+												<svg width="10" height="10" xmlns="http://www.w3.org/2000/svg">
+													<line x1="0" y1="0" x2="10" y2="10" stroke="black" stroke-width="2"></line>
+													<line x1="0" y1="10" x2="10" y2="0" stroke="black" stroke-width="2"></line>
+												</svg>
+											</label>
+										</div>
+									</div>
+								</div>
+							</td>
+						</tr>
+					</table>
+					<!-- 地理院地図レイヤ表示スライダー -->
+					<div class="sidebar-category">▼&nbsp;地理院地図レイヤ</div>
+					<table class="sidebar-items-table">
+						<!-- 陰影起伏スライダー -->
+						<tr>
+							<td class="sidebar-items-tdata">
+								<div class="sidebar-layer-label range-label">
+									<label>起伏陰影</label>
+								</div>
+								<div class="sidebar-range-label">
+									<label>
+										<input class="sidebar-range" id="slider_shade" type="range" min="0" max="100" step="0" value="100" alt="不透明度" title="不透明度">
+										<span id="slider-value_shade" alt="不透明度" title="不透明度">100%</span>
+									</label>
+								</div>
+								<div class="infoicon">
+									<input type="checkbox" class="popup" id="popup_shade">
+									<label class="popup-open iconimg" for="popup_shade"><img src="./img/info_icon.png" alt="地図情報" title="地図情報"></label>
+									<div class="popup-overlay">
+										<div class="popup-window rounded-rect">
+											<p class="popup-title_1">起伏陰影</p>
+											<p class="popup-text">地理院地図の「標高タイル」の標高値をもとに陰影を付けたものです。<br>「陰影起伏図」と違って、地図の回転角度に関係なく光源は常に画面の上方になります。</p>
+											<p class="popup-text">【参考】<br><a href="https://maps.gsi.go.jp/development/demtile.html" title="国土地理院「標高タイルの詳細仕様」" target="_blank">国土地理院「標高タイルの詳細仕様」</a></p>
+											<label class="popup-close" for="popup_shade">
+												<svg width="10" height="10" xmlns="http://www.w3.org/2000/svg">
+													<line x1="0" y1="0" x2="10" y2="10" stroke="black" stroke-width="2"></line>
+													<line x1="0" y1="10" x2="10" y2="0" stroke="black" stroke-width="2"></line>
+												</svg>
+											</label>
+										</div>
+									</div>
+								</div>
+							</td>
+						</tr>
+						<!-- 空中写真スライダー -->
+						<tr>
+							<td class="sidebar-items-tdata">
+								<div class="sidebar-layer-label range-label">
+									<label>空中写真</label>
+								</div>
+								<div class="sidebar-range-label">
+									<label>
+										<input class="sidebar-range" id="slider_photo" type="range" min="0" max="100" step="0" value="0" alt="不透明度" title="不透明度">
+										<span id="slider-value_photo" alt="不透明度" title="不透明度">0%</span>
+									</label>
+								</div>
+								<div class="infoicon">
+									<input type="checkbox" class="popup" id="popup_photo">
+									<label class="popup-open iconimg" for="popup_photo"><img src="./img/info_icon.png" alt="地図情報" title="地図情報"></label>
+									<div class="popup-overlay">
+										<div class="popup-window rounded-rect">
+											<p class="popup-title_1">空中写真</p>
+											<p class="popup-text">地理院地図の「空中写真」タイルです。</p>
+											<p class="popup-text">【参考】<br><a href="https://maps.gsi.go.jp/development/ichiran.html#seamlessphoto" title="国土地理院「地理院タイル一覧」" target="_blank">国土地理院「地理院タイル一覧」</a></p>
+											<label class="popup-close" for="popup_photo">
+												<svg width="10" height="10" xmlns="http://www.w3.org/2000/svg">
+													<line x1="0" y1="0" x2="10" y2="10" stroke="black" stroke-width="2"></line>
+													<line x1="0" y1="10" x2="10" y2="0" stroke="black" stroke-width="2"></line>
+												</svg>
+											</label>
+										</div>
+									</div>
+								</div>
+							</td>
+						</tr>
+						<!-- 地形分類（自然地形）スライダー -->
+						<tr>
+							<td class="sidebar-items-tdata">
+								<div class="sidebar-layer-label range-label">
+									<label>地形分類（自然地形）</label>
+								</div>
+								<div class="sidebar-range-label">
+									<label>
+										<input class="sidebar-range" id="slider_lfc1" type="range" min="0" max="100" step="0" value="60" alt="不透明度" title="不透明度">
+										<span id="slider-value_lfc1" alt="不透明度" title="不透明度">60%</span>
+									</label>
+								</div>
+								<div class="infoicon">
+									<input type="checkbox" class="popup" id="popup_lfc1">
+									<label class="popup-open iconimg" for="popup_lfc1"><img src="./img/info_icon.png" alt="地図情報" title="地図情報"></label>
+									<div class="popup-overlay">
+										<div class="popup-window rounded-rect">
+											<p class="popup-title_1">地形分類（自然地形）</p>
+											<p class="popup-text">地理院地図の「地形分類（自然地形）」タイルです。</p>
+											<p class="popup-text">【表示ズームレベル】 11～16</p>
+											<p class="popup-text">【参考】<br><a href="https://www.gsi.go.jp/bousaichiri/lfc_index.html" title="国土地理院「ベクトルタイル『地形分類』」" target="_blank">国土地理院「ベクトルタイル『地形分類』」</a></p>
+											<label class="popup-close" for="popup_lfc1">
+												<svg width="10" height="10" xmlns="http://www.w3.org/2000/svg">
+													<line x1="0" y1="0" x2="10" y2="10" stroke="black" stroke-width="2"></line>
+													<line x1="0" y1="10" x2="10" y2="0" stroke="black" stroke-width="2"></line>
+												</svg>
+											</label>
+										</div>
+									</div>
+								</div>
+							</td>
+						</tr>
+						<!-- 地形分類（人工地形）スライダー -->
+						<tr>
+							<td class="sidebar-items-tdata">
+								<div class="sidebar-layer-label range-label">
+									<label>地形分類（人工地形）</label>
+								</div>
+								<div class="sidebar-range-label">
+									<label>
+										<input class="sidebar-range" id="slider_lfc2" type="range" min="0" max="100" step="0" value="60" alt="不透明度" title="不透明度">
+										<span id="slider-value_lfc2" alt="不透明度" title="不透明度">60%</span>
+									</label>
+								</div>
+								<div class="infoicon">
+									<input type="checkbox" class="popup" id="popup_lfc2">
+									<label class="popup-open iconimg" for="popup_lfc2"><img src="./img/info_icon.png" alt="地図情報" title="地図情報"></label>
+									<div class="popup-overlay">
+										<div class="popup-window rounded-rect">
+											<p class="popup-title_1">地形分類（人工地形）</p>
+											<p class="popup-text">地理院地図の「地形分類（人工地形）」タイルです。</p>
+											<p class="popup-text">【表示ズームレベル】 11～16</p>
+											<p class="popup-text">【参考】<br><a href="https://www.gsi.go.jp/bousaichiri/lfc_index.html" title="国土地理院「ベクトルタイル『地形分類』」" target="_blank">国土地理院「ベクトルタイル『地形分類』」</a></p>
+											<label class="popup-close" for="popup_lfc2">
+												<svg width="10" height="10" xmlns="http://www.w3.org/2000/svg">
+													<line x1="0" y1="0" x2="10" y2="10" stroke="black" stroke-width="2"></line>
+													<line x1="0" y1="10" x2="10" y2="0" stroke="black" stroke-width="2"></line>
+												</svg>
+											</label>
+										</div>
+									</div>
+								</div>
+							</td>
+						</tr>
+						<!-- 陰影起伏図スライダー -->
+						<tr>
+							<td class="sidebar-items-tdata">
+								<div class="sidebar-layer-label range-label">
+									<label>陰影起伏図</label>
+								</div>
+								<div class="sidebar-range-label">
+									<label>
+										<input class="sidebar-range" id="slider_shape" type="range" min="0" max="100" step="0" value="0" alt="不透明度" title="不透明度">
+										<span id="slider-value_shape" alt="不透明度" title="不透明度">0%</span>
+									</label>
+								</div>
+								<div class="infoicon">
+									<input type="checkbox" class="popup" id="popup_shape">
+									<label class="popup-open iconimg" for="popup_shape"><img src="./img/info_icon.png" alt="地図情報" title="地図情報"></label>
+									<div class="popup-overlay">
+										<div class="popup-window rounded-rect">
+											<p class="popup-title_1">陰影起伏図</p>
+											<p class="popup-text">地理院地図の「陰影起伏図」タイルです。</p>
+											<p class="popup-text">【表示ズームレベル】 4～16</p>
+											<p class="popup-text">【参考】<br><a href="https://www.gsi.go.jp/bousaichiri/hillshademap.html" title="国土地理院「陰影起伏図」" target="_blank">国土地理院「陰影起伏図」</a></p>
+											<label class="popup-close" for="popup_shape">
+												<svg width="10" height="10" xmlns="http://www.w3.org/2000/svg">
+													<line x1="0" y1="0" x2="10" y2="10" stroke="black" stroke-width="2"></line>
+													<line x1="0" y1="10" x2="10" y2="0" stroke="black" stroke-width="2"></line>
+												</svg>
+											</label>
+										</div>
+									</div>
+								</div>
+							</td>
+						</tr>
+						<!-- 傾斜量図スライダー -->
+						<tr>
+							<td class="sidebar-items-tdata">
+								<div class="sidebar-layer-label range-label">
+									<label>傾斜量図</label>
+								</div>
+								<div class="sidebar-range-label">
+									<label>
+										<input class="sidebar-range" id="slider_slope" type="range" min="0" max="100" step="0" value="0" alt="不透明度" title="不透明度">
+										<span id="slider-value_slope" alt="不透明度" title="不透明度">0%</span>
+									</label>
+								</div>
+								<div class="infoicon">
+									<input type="checkbox" class="popup" id="popup_slope">
+									<label class="popup-open iconimg" for="popup_slope"><img src="./img/info_icon.png" alt="地図情報" title="地図情報"></label>
+									<div class="popup-overlay">
+										<div class="popup-window rounded-rect">
+											<p class="popup-title_1">傾斜量図</p>
+											<p class="popup-text">地理院地図の「傾斜量図」タイルです。</p>
+											<p class="popup-text">【表示ズームレベル】 4～15</p>
+											<p class="popup-text">【参考】<br><a href="https://www.gsi.go.jp/bousaichiri/slopemap.html" title="国土地理院「傾斜量図」" target="_blank">国土地理院「傾斜量図」</a></p>
+											<label class="popup-close" for="popup_slope">
+												<svg width="10" height="10" xmlns="http://www.w3.org/2000/svg">
+													<line x1="0" y1="0" x2="10" y2="10" stroke="black" stroke-width="2"></line>
+													<line x1="0" y1="10" x2="10" y2="0" stroke="black" stroke-width="2"></line>
+												</svg>
+											</label>
+										</div>
+									</div>
+								</div>
+							</td>
+						</tr>
+						<!-- 色別標高図スライダー -->
+						<tr>
+							<td class="sidebar-items-tdata">
+								<div class="sidebar-layer-label range-label">
+									<label>色別標高図</label>
+								</div>
+								<div class="sidebar-range-label">
+									<label>
+										<input class="sidebar-range" id="slider_relief" type="range" min="0" max="100" step="0" value="00" alt="不透明度" title="不透明度">
+										<span id="slider-value_relief" alt="不透明度" title="不透明度">0%</span>
+									</label>
+								</div>
+								<div class="infoicon">
+									<input type="checkbox" class="popup" id="popup_relief">
+									<label class="popup-open iconimg" for="popup_relief"><img src="./img/info_icon.png" alt="地図情報" title="地図情報"></label>
+									<div class="popup-overlay">
+										<div class="popup-window rounded-rect">
+											<p class="popup-title_1">色別標高図</p>
+											<p class="popup-text">地理院地図の「色別標高図」タイルです。</p>
+											<p class="popup-text">【表示ズームレベル】 5～15</p>
+											<p class="popup-text">【参考】<br><a href="https://cyberjapandata.gsi.go.jp/legend/attension_relief.html" title="国土地理院「『色別標高図』に関する注意」" target="_blank">国土地理院「『色別標高図』に関する注意」</a></p>
+											<label class="popup-close" for="popup_relief">
+												<svg width="10" height="10" xmlns="http://www.w3.org/2000/svg">
+													<line x1="0" y1="0" x2="10" y2="10" stroke="black" stroke-width="2"></line>
+													<line x1="0" y1="10" x2="10" y2="0" stroke="black" stroke-width="2"></line>
+												</svg>
+											</label>
+										</div>
+									</div>
+								</div>
+							</td>
+						</tr>
+						<!-- 治水地形分類図スライダー -->
+						<tr>
+							<td class="sidebar-items-tdata">
+								<div class="sidebar-layer-label range-label">
+									<label>治水地形分類図</label>
+								</div>
+								<div class="sidebar-range-label">
+									<label>
+										<input class="sidebar-range" id="slider_lcmfc" type="range" min="0" max="100" step="0" value="0" alt="不透明度" title="不透明度">
+										<span id="slider-value_lcmfc" alt="不透明度" title="不透明度">0%</span>
+									</label>
+								</div>
+								<div class="infoicon">
+									<input type="checkbox" class="popup" id="popup_lcmfc">
+									<label class="popup-open iconimg" for="popup_lcmfc"><img src="./img/info_icon.png" alt="地図情報" title="地図情報"></label>
+									<div class="popup-overlay">
+										<div class="popup-window rounded-rect">
+											<p class="popup-title_1">治水地形分類図</p>
+											<p class="popup-text">地理院地図の「治水地形分類図 更新版（2007年以降）」タイルです。</p>
+											<p class="popup-text">【表示ズームレベル】 11～16</p>
+											<p class="popup-text">【参考】<br><a href="https://cyberjapandata.gsi.go.jp/legend/lcmfc2_legend.jpg" title="国土地理院「治水地形分類図 更新版 凡例」" target="_blank">国土地理院「治水地形分類図 更新版 凡例」<br><a href="https://www.gsi.go.jp/bousaichiri/fc_index.html" title="国土地理院「治水地形分類図について」" target="_blank">国土地理院「治水地形分類図について」</a></p>
+											<label class="popup-close" for="popup_lcmfc">
+												<svg width="10" height="10" xmlns="http://www.w3.org/2000/svg">
+													<line x1="0" y1="0" x2="10" y2="10" stroke="black" stroke-width="2"></line>
+													<line x1="0" y1="10" x2="10" y2="0" stroke="black" stroke-width="2"></line>
+												</svg>
+											</label>
+										</div>
+									</div>
+								</div>
+							</td>
+						</tr>
+						<!-- 明治期の低湿地スライダー -->
+						<tr>
+							<td class="sidebar-items-tdata">
+								<div class="sidebar-layer-label range-label">
+									<label>明治期の低湿地</label>
+								</div>
+								<div class="sidebar-range-label">
+									<label>
+										<input class="sidebar-range" id="slider_swale" type="range" min="0" max="100" step="0" value="0" alt="不透明度" title="不透明度">
+										<span id="slider-value_swale" alt="不透明度" title="不透明度">0%</span>
+									</label>
+								</div>
+								<div class="infoicon">
+									<input type="checkbox" class="popup" id="popup_swale">
+									<label class="popup-open iconimg" for="popup_swale"><img src="./img/info_icon.png" alt="地図情報" title="地図情報"></label>
+									<div class="popup-overlay">
+										<div class="popup-window rounded-rect">
+											<p class="popup-title_1">明治期の低湿地</p>
+											<p class="popup-text">地理院地図の「明治期の低湿地」タイルです。</p>
+											<p class="popup-text">【表示ズームレベル】 10～16</p>
+											<p class="popup-text">【参考】<br><a href="https://cyberjapandata.gsi.go.jp/legend/lw_legend.pdf" title="国土地理院「明治期の低湿地 地理院地図 表示用凡例」" target="_blank">国土地理院「明治期の低湿地 地理院地図 表示用凡例」<br><a href="https://www.gsi.go.jp/bousaichiri/lc_meiji.html" title="国土地理院「明治期の低湿地データ」" target="_blank">国土地理院「明治期の低湿地データ」</a></p>
+											<label class="popup-close" for="popup_swale">
+												<svg width="10" height="10" xmlns="http://www.w3.org/2000/svg">
+													<line x1="0" y1="0" x2="10" y2="10" stroke="black" stroke-width="2"></line>
+													<line x1="0" y1="10" x2="10" y2="0" stroke="black" stroke-width="2"></line>
+												</svg>
+											</label>
+										</div>
+									</div>
+								</div>
+							</td>
+						</tr>
+						<!-- 活断層図スライダー -->
+						<tr>
+							<td class="sidebar-items-tdata">
+								<div class="sidebar-layer-label range-label">
+									<label>活断層図</label>
+								</div>
+								<div class="sidebar-range-label">
+									<label>
+										<input class="sidebar-range" id="slider_afm" type="range" min="0" max="100" step="0" value="0" alt="不透明度" title="不透明度">
+										<span id="slider-value_afm" alt="不透明度" title="不透明度">0%</span>
+									</label>
+								</div>
+								<div class="infoicon">
+									<input type="checkbox" class="popup" id="popup_afm">
+									<label class="popup-open iconimg" for="popup_afm"><img src="./img/info_icon.png" alt="地図情報" title="地図情報"></label>
+									<div class="popup-overlay">
+										<div class="popup-window rounded-rect">
+											<p class="popup-title_1">活断層図</p>
+											<p class="popup-text">地理院地図の「活断層図（都市圏活断層図）」タイルです。</p>
+											<p class="popup-text">【表示ズームレベル】 11～16</p>
+											<p class="popup-text">【参考】<br><a href="https://www.gsi.go.jp/common/000084060.pdf" title="国土地理院「活断層図（都市圏活断層図）の内容（記号一覧）」" target="_blank">国土地理院「活断層図（都市圏活断層図）の内容（記号一覧）」<br><a href="https://www.gsi.go.jp/bousaichiri/guidebook.html" title="国土地理院「活断層図（都市圏活断層図）の解説」" target="_blank">国土地理院「活断層図（都市圏活断層図）の解説」<br><a href="https://www.gsi.go.jp/common/000153506.pdf" title="国土地理院「1:25,000 活断層図 （都市圏活断層図）利用の手引」" target="_blank">国土地理院「1:25,000 活断層図 （都市圏活断層図）利用の手引」</a></p>
+											<label class="popup-close" for="popup_afm">
+												<svg width="10" height="10" xmlns="http://www.w3.org/2000/svg">
+													<line x1="0" y1="0" x2="10" y2="10" stroke="black" stroke-width="2"></line>
+													<line x1="0" y1="10" x2="10" y2="0" stroke="black" stroke-width="2"></line>
+												</svg>
+											</label>
+										</div>
+									</div>
+								</div>
+							</td>
+						</tr>
+						<!-- 土地条件図スライダー -->
+						<tr>
+							<td class="sidebar-items-tdata">
+								<div class="sidebar-layer-label range-label">
+									<label>土地条件図</label>
+								</div>
+								<div class="sidebar-range-label">
+									<label>
+										<input class="sidebar-range" id="slider_lcm25k_2012" type="range" min="0" max="100" step="0" value="0" alt="不透明度" title="不透明度">
+										<span id="slider-value_lcm25k_2012" alt="不透明度" title="不透明度">0%</span>
+									</label>
+								</div>
+								<div class="infoicon">
+									<input type="checkbox" class="popup" id="popup_lcm25k_2012">
+									<label class="popup-open iconimg" for="popup_lcm25k_2012"><img src="./img/info_icon.png" alt="地図情報" title="地図情報"></label>
+									<div class="popup-overlay">
+										<div class="popup-window rounded-rect">
+											<p class="popup-title_1">土地条件図</p>
+											<p class="popup-text">地理院地図の「数値情報25000（土地条件）」タイルです。</p>
+											<p class="popup-text">【表示ズームレベル】 10～16</p>
+											<p class="popup-text">【参考】<br><a href="https://cyberjapandata.gsi.go.jp/legend/lcm25k_2012/lc_legend.pdf" title="国土地理院「数値地図25000（土地条件） 地理院地図 表示用凡例」" target="_blank">国土地理院「数値地図25000（土地条件） 地理院地図 表示用凡例」</a></p>
+											<label class="popup-close" for="popup_lcm25k_2012">
+												<svg width="10" height="10" xmlns="http://www.w3.org/2000/svg">
+													<line x1="0" y1="0" x2="10" y2="10" stroke="black" stroke-width="2"></line>
+													<line x1="0" y1="10" x2="10" y2="0" stroke="black" stroke-width="2"></line>
+												</svg>
+											</label>
+										</div>
+									</div>
+								</div>
+							</td>
+						</tr>
+					</table>
+				</div>
+			</div>
+			<label class="sidebar-close" for="openSidebarMenu">
+				<svg width="10" height="10" xmlns="http://www.w3.org/2000/svg">
+					<line x1="0" y1="0" x2="10" y2="10" stroke="black" stroke-width="2"></line>
+					<line x1="0" y1="10" x2="10" y2="0" stroke="black" stroke-width="2"></line>
+				</svg>
+			</label>
+		</div>
+	</div>
+	<script>
+		// PMTilesの読み込み
+		const protocol = new pmtiles.Protocol();
+		maplibregl.addProtocol('pmtiles',protocol.tile);
+
+		// PMTilesファイルの読み込み
+		const LFC1_URL = './geofiles/lfc1.pmtiles';
+		const LFC2_URL = './geofiles/lfc2.pmtiles';
+		const LFALISTPL_URL = './geofiles/lfalist_pl.pmtiles';
+
+		const p_lfc1 = new pmtiles.PMTiles(LFC1_URL);
+		const p_lfc2 = new pmtiles.PMTiles(LFC2_URL);
+		const p_lfalistpl = new pmtiles.PMTiles(LFALISTPL_URL);
+		p_lfc1.getMetadata().then((res) => console.log(res));
+		p_lfc2.getMetadata().then((res) => console.log(res));
+		p_lfalistpl.getMetadata().then((res) => console.log(res));
+
+		protocol.add(p_lfc1);
+		protocol.add(p_lfc2);
+		protocol.add(p_lfalistpl);
+
+		// ベースマップ（地理院ベクタレイヤ）表示設定
+		const map = new maplibregl.Map({
+			container: 'map',
+			style: './gsi-std.json',
+			zoom: 5,
+			minZoom: 4,
+			maxZoom: 16,
+			pitch: 0,
+			maxPitch: 85,
+			bearing: 0,
+			center: [136, 35.5],
+			hash: true
+		});
+
+		// オーバーレイ設定
+		map.on('load', function () {
+
+			// !!!!地理院標高タイル設定1（標高データ）
+			// ラスタ読み込み
+			map.addSource('gsi_dem', {
+				type: 'raster-dem',
+				tiles: [
+					'gsidem://https://cyberjapandata.gsi.go.jp/xyz/dem_png/{z}/{x}/{y}.png',
+				],
+				tilesize: 256,
+				attribution:
+					'Map tiles by <a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">地理院タイル</a>.'
+			});
+
+			// 地形3D表示
+			map.setTerrain({
+				'source': 'gsi_dem',
+				'exaggeration': 4,
+			});
+
+			// 倍率スライダー設定
+			const slider_terrain = document.getElementById('slider_terrain');
+			const sliderValue_terrain = document.getElementById('slider-value_terrain');
+
+			slider_terrain.addEventListener('input', (e) => {
+				map.setTerrain({
+					'source': 'gsi_dem',
+					'exaggeration':
+					parseInt(e.target.value, 10) ,
+				});
+
+				sliderValue_terrain.textContent = e.target.value + '倍';
+			});
+
+			// !!!!地理院標高タイル設定2（起伏陰影）
+			// ラスタ読み込み
+			map.addSource('gsi_shade', {
+				type: 'raster-dem',
+				tiles: [
+					'gsidem://https://cyberjapandata.gsi.go.jp/xyz/dem_png/{z}/{x}/{y}.png',
+				],
+				tilesize: 256,
+			});
+
+			map.addLayer({
+				id: 'gsi_shade',
+				type: 'hillshade',
+				source: 'gsi_shade',
+				minzoom: 4,
+				maxzoom: 16,
+				paint: {
+					'hillshade-exaggeration': 1,
+					'hillshade-shadow-color': "#222200"
+				}
+			});
+
+			// レイヤ不透明度スライダー設定
+			const slider_shade = document.getElementById('slider_shade');
+			const sliderValue_shade = document.getElementById('slider-value_shade');
+
+			slider_shade.addEventListener('input', (e) => {
+				map.setPaintProperty(
+					'gsi_shade',
+					'hillshade-exaggeration',
+					parseInt(e.target.value, 10) / 100
+				);
+
+				sliderValue_shade.textContent = e.target.value + '%';
+			});
+
+			// !!!!地理院空中写真設定
+			// ラスタ読み込み
+			map.addSource('gsi_photo', {
+				type: 'raster',
+				tiles: [
+					'https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg',
+				],
+				tileSize: 256,
+			});
+
+			map.addLayer({
+				id: 'gsi_photo',
+				type: 'raster',
+				source: 'gsi_photo',
+				minzoom: 4,
+				maxzoom: 16,
+				paint: {
+					'raster-opacity': 0
+				}
+			});
+
+			// レイヤ不透明度スライダー設定
+			const slider_photo = document.getElementById('slider_photo');
+			const sliderValue_photo = document.getElementById('slider-value_photo');
+
+			slider_photo.addEventListener('input', (e) => {
+				map.setPaintProperty(
+					'gsi_photo',
+					'raster-opacity',
+					parseInt(e.target.value, 10) / 100
+				);
+
+				sliderValue_photo.textContent = e.target.value + '%';
+			});
+
+			// !!!!地理院数値地図25000（土地条件）設定
+			// ラスタ読み込み
+			map.addSource('gsi_lcm25k_2012', {
+				type: 'raster',
+				tiles: [
+					'https://cyberjapandata.gsi.go.jp/xyz/lcm25k_2012/{z}/{x}/{y}.png',
+				],
+				tileSize: 256,
+			});
+			map.addLayer({
+				id: 'gsi_lcm25k_2012',
+				type: 'raster',
+				source: 'gsi_lcm25k_2012',
+				minzoom: 10,
+				maxzoom: 16,
+				paint: {
+					'raster-opacity': 0
+				}
+			});
+
+			// レイヤ不透明度スライダー設定
+			const slider_lcm25k_2012 = document.getElementById('slider_lcm25k_2012');
+			const sliderValue_lcm25k_2012 = document.getElementById('slider-value_lcm25k_2012');
+
+			slider_lcm25k_2012.addEventListener('input', (e) => {
+				map.setPaintProperty(
+					'gsi_lcm25k_2012',
+					'raster-opacity',
+					parseInt(e.target.value, 10) / 100
+				);
+
+				sliderValue_lcm25k_2012.textContent = e.target.value + '%';
+			});
+
+			// !!!!地理院活断層図設定
+			// ラスタ読み込み
+			map.addSource('gsi_afm', {
+				type: 'raster',
+				tiles: [
+					'https://cyberjapandata.gsi.go.jp/xyz/afm/{z}/{x}/{y}.png',
+				],
+				tileSize: 256,
+			});
+			map.addLayer({
+				id: 'gsi_afm',
+				type: 'raster',
+				source: 'gsi_afm',
+				minzoom: 11,
+				maxzoom: 16,
+				paint: {
+					'raster-opacity': 0
+				}
+			});
+
+			// レイヤ不透明度スライダー設定
+			const slider_afm = document.getElementById('slider_afm');
+			const sliderValue_afm = document.getElementById('slider-value_afm');
+
+			slider_afm.addEventListener('input', (e) => {
+				map.setPaintProperty(
+					'gsi_afm',
+					'raster-opacity',
+					parseInt(e.target.value, 10) / 100
+				);
+
+				sliderValue_afm.textContent = e.target.value + '%';
+			});
+
+			// !!!!地理院明治期の低湿地設定
+			// ラスタ読み込み
+			map.addSource('gsi_swale', {
+				type: 'raster',
+				tiles: [
+					'https://cyberjapandata.gsi.go.jp/xyz/swale/{z}/{x}/{y}.png',
+				],
+				tileSize: 256,
+			});
+			map.addLayer({
+				id: 'gsi_swale',
+				type: 'raster',
+				source: 'gsi_swale',
+				minzoom: 10,
+				maxzoom: 16,
+				paint: {
+					'raster-opacity': 0
+				}
+			});
+
+			// レイヤ不透明度スライダー設定
+			const slider_swale = document.getElementById('slider_swale');
+			const sliderValue_swale = document.getElementById('slider-value_swale');
+
+			slider_swale.addEventListener('input', (e) => {
+				map.setPaintProperty(
+					'gsi_swale',
+					'raster-opacity',
+					parseInt(e.target.value, 10) / 100
+				);
+
+				sliderValue_swale.textContent = e.target.value + '%';
+			});
+
+			// !!!!地理院治水地形分類図設定
+			// ラスタ読み込み
+			map.addSource('gsi_lcmfc', {
+				type: 'raster',
+				tiles: [
+					'https://cyberjapandata.gsi.go.jp/xyz/lcmfc2/{z}/{x}/{y}.png',
+				],
+				tileSize: 256,
+			});
+			map.addLayer({
+				id: 'gsi_lcmfc',
+				type: 'raster',
+				source: 'gsi_lcmfc',
+				minzoom: 11,
+				maxzoom: 16,
+				paint: {
+					'raster-opacity': 0
+				}
+			});
+
+			// レイヤ不透明度スライダー設定
+			const slider_lcmfc = document.getElementById('slider_lcmfc');
+			const sliderValue_lcmfc = document.getElementById('slider-value_lcmfc');
+
+			slider_lcmfc.addEventListener('input', (e) => {
+				map.setPaintProperty(
+					'gsi_lcmfc',
+					'raster-opacity',
+					parseInt(e.target.value, 10) / 100
+				);
+
+				sliderValue_lcmfc.textContent = e.target.value + '%';
+			});
+
+			// !!!!地理院色別標高図設定
+			// ラスタ読み込み
+			map.addSource('gsi_relief', {
+				type: 'raster',
+				tiles: [
+					'https://cyberjapandata.gsi.go.jp/xyz/relief/{z}/{x}/{y}.png',
+				],
+				tileSize: 256,
+			});
+			map.addLayer({
+				id: 'gsi_relief',
+				type: 'raster',
+				source: 'gsi_relief',
+				minzoom: 5,
+				maxzoom: 15,
+				paint: {
+					'raster-opacity': 0
+				}
+			});
+
+			// レイヤ不透明度スライダー設定
+			const slider_relief = document.getElementById('slider_relief');
+			const sliderValue_relief = document.getElementById('slider-value_relief');
+
+			slider_relief.addEventListener('input', (e) => {
+				map.setPaintProperty(
+					'gsi_relief',
+					'raster-opacity',
+					parseInt(e.target.value, 10) / 100
+				);
+
+				sliderValue_relief.textContent = e.target.value + '%';
+			});
+
+			// !!!!地理院傾斜量図設定
+			// ラスタ読み込み
+			map.addSource('gsi_slope', {
+				type: 'raster',
+				tiles: [
+					'https://cyberjapandata.gsi.go.jp/xyz/slopemap/{z}/{x}/{y}.png',
+				],
+				tileSize: 256,
+			});
+			map.addLayer({
+				id: 'gsi_slope',
+				type: 'raster',
+				source: 'gsi_slope',
+				minzoom: 4,
+				maxzoom: 15,
+				paint: {
+					'raster-opacity': 0
+				}
+			});
+
+			// レイヤ不透明度スライダー設定
+			const slider_slope = document.getElementById('slider_slope');
+			const sliderValue_slope = document.getElementById('slider-value_slope');
+
+			slider_slope.addEventListener('input', (e) => {
+				map.setPaintProperty(
+					'gsi_slope',
+					'raster-opacity',
+					parseInt(e.target.value, 10) / 100
+				);
+
+				sliderValue_slope.textContent = e.target.value + '%';
+			});
+
+			// !!!!地理院陰影起伏図設定
+			// ラスタ読み込み
+			map.addSource('gsi_shape', {
+				type: 'raster',
+				tiles: [
+					'https://cyberjapandata.gsi.go.jp/xyz/hillshademap/{z}/{x}/{y}.png',
+				],
+				tilesize: 256,
+			});
+
+			map.addLayer({
+				id: 'gsi_shape',
+				type: 'raster',
+				source: 'gsi_shape',
+				minzoom: 4,
+				maxzoom: 16,
+				paint: {
+					'raster-opacity': 0
+				}
+			});
+
+			// レイヤ不透明度スライダー設定
+			const slider_shape = document.getElementById('slider_shape');
+			const sliderValue_shape = document.getElementById('slider-value_shape');
+
+			slider_shape.addEventListener('input', (e) => {
+				map.setPaintProperty(
+					'gsi_shape',
+					'raster-opacity',
+					parseInt(e.target.value, 10) / 100
+				);
+
+				sliderValue_shape.textContent = e.target.value + '%';
+			});
+
+			// !!!!地理院地形分類（自然地形）設定
+			// PMTilesファイル読み込み
+			map.addSource('gsi_lfc1', {
+				type: 'vector',
+				url: 'pmtiles://' + LFC1_URL,
+			});
+
+			// ポリゴンレイヤのフィル表示設定
+			map.addLayer({
+				'id': 'gsi_lfc1',
+				'type': 'fill',
+				'source': 'gsi_lfc1',
+				'source-layer': 'lfc1',
+				minzoom: 11,
+				maxzoom: 16,
+				'paint': {
+					"fill-color": [
+						"match",
+						[
+							"to-number",
+							[
+								"get",
+								"code"
+							]
+						],
+						[
+							10101,1010101,11201,11202,11203,11204
+						],
+						"#d9cbae",
+						[
+							10202,10204,2010201
+						],
+						"#9466ab",
+						[
+							10205,10206
+						],
+						"#cc99ff",
+						[
+							10301,10302,10303,10304,10308,10314,10305,10508,2010101,10306,10307,10310,10312
+						],
+						"#ffaa00",
+						[
+							10401,10402,10403,10404,10406,10407,3010101
+						],
+						"#99804d",
+						[
+							10501,10502,3020101
+						],
+						"#cacc60",
+						[
+							10503,3040101
+						],
+						"#ffff33",
+						[
+							10506,10507,10801
+						],
+						"#fbe09d",
+						[
+							10504,10505,10512,3050101
+						],
+						"#ffff99",
+						[
+							10601,2010301
+						],
+						"#a3cc7e",
+						[
+							10701,3030101,10702,10705
+						],
+						"#bbff99",
+						[
+							10703,10804,3030201
+						],
+						"#00d1a4",
+						[
+							10704,3040201,3040202
+						],
+						"#6699ff",
+						[
+							3040301
+						],
+						"#1f9999",
+						[
+							10802,10803,10807,10808
+						],
+						"#9f9fc4",
+						[
+							10805,10806,10901,10903,5010201
+						],
+						"#e5ffff",
+						[
+							10904,5010301
+						],
+						"#779999",
+						"#aaaaaa"
+					],
+					'fill-opacity': 0.6
+				}
+			});
+
+			// レイヤ不透明度スライダー設定
+			const slider_lfc1 = document.getElementById('slider_lfc1');
+			const sliderValue_lfc1 = document.getElementById('slider-value_lfc1');
+
+			slider_lfc1.addEventListener('input', (e) => {
+				map.setPaintProperty(
+					'gsi_lfc1',
+					'fill-opacity',
+					parseInt(e.target.value, 10) / 100
+				);
+
+				sliderValue_lfc1.textContent = e.target.value + '%';
+			});
+
+			// ポリゴンレイヤのマウスクリック時の属性表示動作
+			map.on('click', 'gsi_lfc1', function (e) {
+
+				// クリックした座標の全レイヤ名を取得
+				const features = map.queryRenderedFeatures(e.point);
+				const clickedLayerNames = features.map(function (feature) {
+					return feature.layer.id;
+				});
+				
+				// 取得したレイヤ名配列の中に指定のレイヤ名が含まれていない場合にポップアップを表示する
+				if (clickedLayerNames.indexOf('lfalist_points') === -1) {
+
+					// 不透明度0%の場合はポップアップを表示しない
+					const value_lfc1 = document.getElementById('slider-value_lfc1');
+					if (value_lfc1.textContent !== '0%') {
+
+					// 属性設定
+						const code = e.features[0].properties['code'];
+
+						if (code === 10101 || code === 11201 || code === 11202 || code === 11203 || code === 11204 || code === 1010101 || code === '10101' || code === '11201' || code === '11202' || code === '11203' || code === '11204' || code === '1010101') {
+							var landFormName = '山地';
+							var naritachi = '尾根や谷からなる土地や、比較的斜面の急な土地。山がちな古い段丘崖の斜面や火山地を含む。';
+							var risk = '大雨や地震により、崖崩れや土石流、地すべりなどの土砂災害のリスクがある。';
+						}
+
+						else if (code === 10202 || code === 10204 || code === 2010201 || code === '10202' || code === '10204' || code === '2010201') {
+							var landFormName = '崖･段丘崖';
+							var naritachi = '台地の縁にある極めて急な斜面や、山地や海岸沿いなどの岩場。';
+							var risk = '周辺では大雨や地震の揺れによる崖崩れなどの土砂災害のリスクがある。';
+						}
+
+						else if (code === 10205 || code === 10206 || code === '10205' || code === '10206') {
+							var landFormName = '地すべり地形';
+							var naritachi = '斜面が下方に移動し、斜面上部の崖と不規則な凹凸のある移動部分からなる土地。山体の一部が重力により滑ってできる。';
+						var risk = '大雨・雪解けにより多量の水分が土中に含まれたり、地震で揺れたりすることで、土地が滑って土砂災害を引き起こすことがある。';
+						}
+
+						else if (code === 10301 || code === 10302 || code === 10303 || code === 10304 || code === 10308 || code === 10314 || code === 10305 || code === 10508 || code === 2010101 || code === 10306 || code === 10307 || code === 10310 || code === 10312 || code === '10301' || code === '10302' || code === '10303' || code === '10304' || code === '10308' || code === '10314' || code === '10305' || code === '10508' || code === '2010101' || code === '10306' || code === '10307' || code === '10310' || code === '10312') {
+							var landFormName = '台地･段丘';
+							var naritachi = '周囲より階段状に高くなった平坦な土地。周囲が侵食により削られて取り残されてできる。';
+							var risk = '河川氾濫のリスクはほとんどないが、河川との高さが小さい場合には注意。縁辺部の斜面近くでは崖崩れに注意。地盤は良く、地震の揺れや液状化のリスクは小さい。';
+						}
+
+						else if (code === 10401 || code === 10402 || code === 10403 || code === 10404 || code === 10406 || code === 10407 || code === 3010101 || code === '10401' || code === '10402' || code === '10403' || code === '10404' || code === '10406' || code === '10407' || code === '3010101') {
+							var landFormName = '山麓堆積地形';
+							var naritachi = '山地や崖･段丘崖の下方にあり、山地より斜面の緩やかな土地。崖崩れや土石流などによって土砂が堆積してできる。';
+							var risk = '大雨により土石流が発生するリスクがある。地盤は不安定で、地震による崖崩れにも注意。';
+						}
+
+						else if (code === 10501 || code === 10502 || code === 3020101 || code === '10501' || code === '10502' || code === '3020101') {
+							var landFormName = '扇状地';
+							var naritachi = '山麓の谷の出口から扇状に広がる緩やかな斜面。谷口からの氾濫によって運ばれた土砂が堆積してできる。';
+							var risk = '山地からの出水による浸水や、谷口に近い場所では土石流のリスクがある。比較的地盤は良いため、地震の際には揺れにくい。下流部では液状化のリスクがある。';
+						}
+
+						else if (code === 10503 || code === 3040101 || code === '10503' || code === '3040101') {
+							var landFormName = '自然堤防';
+							var naritachi = '現在や昔の河川に沿って細長く分布し、周囲より0.5～数メートル高い土地。河川が氾濫した場所に土砂が堆積してできる。';
+							var risk = '洪水に対しては比較的安全だが、大規模な洪水では浸水することがある。縁辺部では液状化のリスクがある。';
+						}
+
+						else if (code === 10506 || code === 10507 || code === 10801 || code === '10506' || code === '10507' || code === '10801') {
+							var landFormName = '天井川';
+							var naritachi = '周囲の土地より河床が高い河川。人工的な河川堤防が築かれることで、固定された河床に土砂が堆積してできる。';
+							var risk = 'ひとたび天井川の堤防が決壊すれば、氾濫流が周辺に一気に拡がるため注意が必要。';
+						}
+
+						else if (code === 10504 || code === 10505 || code === 10512 || code === 3050101 || code === '10504' || code === '10505' || code === '10512' || code === '3050101') {
+							var landFormName = '砂州・砂丘';
+							var naritachi = '主に現在や昔の海岸･湖岸･河岸沿いにあり、周囲よりわずかに高い土地。波によって打ち上げられた砂や礫、風によって運ばれた砂が堆積することでできる。';
+							var risk = '通常の洪水では浸水を免れることが多い。縁辺部では強い地震によって液状化しやすい。';
+						}
+
+						else if (code === 10601 || code === 2010301 || code === '10601' || code === '2010301') {
+							var landFormName = '凹地・浅い谷';
+							var naritachi = '台地や扇状地、砂丘などの中にあり、周辺と比べてわずかに低い土地。小規模な流水の働きや、周辺部に砂礫が堆積して相対的に低くなる等でできる。';
+							var risk = '大雨の際に一時的に雨水が集まりやすく、浸水のおそれがある。地盤は周囲（台地･段丘など）より軟弱な場合があり、とくに周辺が砂州・砂丘の場所では液状化のリスクがある。';
+						}
+
+						else if (code === 3030101 || code === 10701 || code === 10702 || code === 10705 || code === '3030101' || code === '10701' || code === '10702' || code === '10705') {
+							var landFormName = '氾濫平野';
+							var naritachi = '起伏が小さく、低くて平坦な土地。洪水で運ばれた砂や泥などが河川周辺に堆積したり、過去の海底が干上がったりしてできる。';
+							var risk = '河川の氾濫に注意。地盤は海岸に近いほど軟弱で、地震の際にやや揺れやすい。液状化のリスクがある。沿岸部では高潮に注意。';
+						}
+
+						else if (code === 10703 || code === 10804 || code === 3030201 || code === '10703' || code === '10804' || code === '3030201') {
+							var landFormName = '後背低地･湿地';
+							var naritachi = '主に氾濫平野の中にあり、周囲よりわずかに低い土地。洪水による砂や礫の堆積がほとんどなく、氾濫水に含まれる泥が堆積してできる。';
+							var risk = '河川の氾濫によって周囲よりも長期間浸水し、水はけが悪い。地盤が極めて軟弱で、地震の際は揺れが大きくなりやすい。液状化のリスクが大きい。沿岸部では高潮に注意。';
+						}
+
+						else if (code === 10704 || code === 3040201 || code === 3040202 || code === '10704' || code === '3040201' || code === '3040202') {
+							var landFormName = '旧河道';
+							var naritachi = 'かつて河川の流路だった場所で、周囲よりもわずかに低い土地。流路の移動によって河川から切り離されて、その後に砂や泥などで埋められてできる。';
+							var risk = '河川の氾濫によって周囲よりも長期間浸水し、水はけが悪い。地盤が軟弱で、地震の際は揺れが大きくなりやすい。液状化のリスクが大きい。';
+						}
+
+						else if (code === 3040301 || code === '3040301') {
+							var landFormName = '落堀';
+							var naritachi = '河川堤防沿いにある凹地状の土地。洪水のときに、堤防を越えた水によって地面が侵食されてできる。';
+							var risk = '河川の氾濫や堤防からの越水に注意。周囲の地盤に比べて軟弱なことが多い。液状化のリスクが大きい。';
+						}
+
+						else if (code === 10802 || code === 10803 || code === 10807 || code === 10808 || code === '10802' || code === '10803' || code === '10807' || code === '10808') {
+							var landFormName = '河川敷･浜';
+							var naritachi = '調査時の河川敷や、調査時または明治期等に浜辺、岩礁である土地。';
+							var risk = '河川の増水や高波で冠水する。河川敷は液状化のリスクが大きい。';
+						}
+
+						else if (code === 10805 || code === 10806 || code === 10901 || code === 10903 || code === 5010201 || code === '10805' || code === '10806' || code === '10901' || code === '10903' || code === '5010201') {
+							var landFormName = '水部';
+							var naritachi = '調査時において、海や湖沼、河川などの水面である場所';
+							var risk = '';
+						}
+
+						else if (code === 10904 || code === 5010301 || code === '10904' || code === '5010301') {
+							var landFormName = '旧水部';
+							var naritachi = '江戸時代もしくは明治期から調査時までの間に海や湖、池･貯水池であり、過去の地形図などから水部であったと確認できる土地。その後の土砂の堆積や土木工事により陸地になったところ。';
+							var risk = '地盤が軟弱である。液状化のリスクが大きい。沿岸部では高潮に注意。';
+						}
+
+						new maplibregl.Popup()
+							.setLngLat(e.lngLat)
+							.setHTML(
+								'<div style="margin-bottom: 10px;">《地形分類（自然地形）情報》</div>' +
+								'<div style="color:#ff00ff;font-size:1.1em;float:left;">' + landFormName + '</div><div style="text-align:right;margin-right:1em;"><a href="http://www.gsi.go.jp/bousaichiri/lfc_index.html" title="国土地理院「ベクトルタイル『地形分類』」" target="_blank">出典等</a></div>' +
+								'<div style="font-size:0.9em;margin-top:0.4em;"><span style="color:#0000ff">土地の成り立ち</span>&emsp;' + naritachi + '</div>' +
+								'<div style="font-size:0.9em;margin-top:0.4em;"><span style="color:#0000ff">この地形の自然災害リスク</span>&emsp;' + risk + '</div>' +
+								'<div style="font-size:0.7em;margin-top:0.3em;">上記は一般的な自然災害リスクであり、個別の場所のリスクを示しているものではありません。</div>'
+							)
+							.addTo(map);
+					}
+				}
+			});
+
+			// !!!!地理院地形分類（人工地形）設定
+			// PMTilesファイル読み込み
+			map.addSource('gsi_lfc2', {
+				type: 'vector',
+				url: 'pmtiles://' + LFC2_URL,
+			});
+
+			// ポリゴンレイヤのフィル表示設定
+			map.addLayer({
+				'id': 'gsi_lfc2',
+				'type': 'fill',
+				'source': 'gsi_lfc2',
+				'source-layer': 'lfc2',
+				minzoom: 11,
+				maxzoom: 16,
+				'paint': {
+					"fill-color": [
+						"match",
+						[
+							"to-number",
+							[
+								"get",
+								"code"
+							]
+						],
+						[
+							11001,11003,11009,11011,
+							4010301
+						],
+						"#85c4d1",
+						[
+							11002
+						],
+						"#8ad8b6",
+						[
+							11004,11006,11007,11014
+						],
+						"#ef8888",
+						[
+							4010201,11005
+						],
+						"#ff4f4f",
+						[
+							11008,4010101
+						],
+						"#c37aff",
+						[
+							11010
+						],
+						"#ffe8e8",
+						"#aaaaaa"
+					],
+					'fill-opacity': 0.6
+				}
+			});
+
+			// レイヤ不透明度スライダー設定
+			const slider_lfc2 = document.getElementById('slider_lfc2');
+			const sliderValue_lfc2 = document.getElementById('slider-value_lfc2');
+
+			slider_lfc2.addEventListener('input', (e) => {
+				map.setPaintProperty(
+					'gsi_lfc2',
+					'fill-opacity',
+					parseInt(e.target.value, 10) / 100
+				);
+
+				sliderValue_lfc2.textContent = e.target.value + '%';
+			});
+
+			// ポリゴンレイヤのマウスクリック時の属性表示動作
+			map.on('click', 'gsi_lfc2', function (e) {
+
+				// クリックした座標の全レイヤ名を取得
+				const features = map.queryRenderedFeatures(e.point);
+				const clickedLayerNames = features.map(function (feature) {
+					return feature.layer.id;
+				});
+				
+				// 取得したレイヤ名配列の中に指定のレイヤ名が含まれていない場合にポップアップを表示する
+				if (clickedLayerNames.indexOf('lfalist_points') === -1) {
+
+					// 不透明度0%の場合はポップアップを表示しない
+					const value_lfc2 = document.getElementById('slider-value_lfc2');
+					if (value_lfc2.textContent !== '0%') {
+
+						// 属性設定
+						const code = e.features[0].properties['code'];
+
+						if (code === 11001 || code === 11003 || code === 11009 || code === 11011 || code === 4010301 || code === '11001' || code === '11003' || code === '11009' || code === '11011' || code === '4010301') {
+							var landFormName = '切土地';
+							var naritachi = '山地、台地の縁などの斜面を切取りにより造成した土地。';
+							var risk = '切取り斜面によっては、大雨や地震により斜面崩壊のリスクがある。地盤は一般的に良好。';
+						}
+
+						else if (code === 11002 || code === '11002') {
+							var landFormName = '農耕平坦化地';
+							var naritachi = '山地などを切り開いて整地した農耕地。';
+							var risk = '大雨や地震により崩壊するリスクがある。';
+						}
+
+						else if (code === 11005 || code === 4010201 || code === '11005' || code === '4010201') {
+							var landFormName = '高い盛土地';
+							var naritachi = '周辺よりも約2m以上盛土した造成地。主に海水面などの水部に土砂を投入して陸地にしたり、谷のような凹地を埋め立てて造成した土地。';
+							var risk = '海や湖沼、河川を埋め立てた場所では、強い地震の際に液状化のリスクがある。山間部の谷を埋め立てた造成地では、大雨や地震により地盤崩壊のリスクがある。';
+						}
+
+						else if (code === 11008 || code === 4010101 || code === '11008' || code === '4010101') {
+							var landFormName = '干拓地';
+							var naritachi = '水面や低湿地を堤防で締め切って排水して、新たな陸地になった土地。過去の地形図や資料から、干拓されたことが確認できる場所。';
+							var risk = '一般に海･湖水面より低いため、洪水時に氾濫水が留まりやすい。沿岸部では特に高潮に対して注意が必要。地盤は軟弱で、地震による揺れも大きくなりやすい。液状化のリスクがある。';
+						}
+
+						else if (code === 11004 || code === 11006 || code === 11007 || code === 11014 || code === '11004' || code === '11006' || code === '11007' || code === '11014') {
+							var landFormName = '盛土地･埋立地';
+							var naritachi = '周囲の地表より高く盛土した土地や、海水面などの水部に土砂を投入して陸地にしたり、谷のような凹地を埋め立てて造成した土地。';
+							var risk = '高さが十分でない場合には浸水のリスクがある。山地や台地では降雨･地震により地盤崩壊のリスクがある。低地では液状化のリスクがあり、海や湖沼･河川を埋め立てた場所では特に注意。';
+						}
+
+						else if (code === 11010 || code === '11010') {
+							var landFormName = '改変工事中';
+							var naritachi = '調査時に土地の改変工事が行われていた土地。';
+							var risk = '';
+						}
+
+						new maplibregl.Popup()
+							.setLngLat(e.lngLat)
+							.setHTML(
+								'<div style="margin-bottom: 10px;">《地形分類（人工地形）情報》</div>' +
+								'<div style="color:#ff00ff;font-size:1.1em;float:left;">' + landFormName + '</div><div style="text-align:right;margin-right:1em;"><a href="http://www.gsi.go.jp/bousaichiri/lfc_index.html" title="国土地理院「ベクトルタイル『地形分類』」" target="_blank">出典等</a></div>' +
+								'<div style="font-size:0.9em;margin-top:0.4em;"><span style="color:#0000ff">土地の成り立ち</span>&emsp;' + naritachi + '</div>' +
+								'<div style="font-size:0.9em;margin-top:0.4em;"><span style="color:#0000ff">この地形の自然災害リスク</span>&emsp;' + risk + '</div>' +
+								'<div style="font-size:0.7em;margin-top:0.3em;">上記は一般的な自然災害リスクであり、個別の場所のリスクを示しているものではありません。</div>'
+							)
+							.addTo(map);
+					}
+				}
+			});
+
+			// !!!!地形解説レイヤ設定
+			// PMTilesファイル読み込み
+			map.addSource('lfalist', {
+				type: 'vector',
+				url: 'pmtiles://' + LFALISTPL_URL,
+				attribution: 'Produced by <a href="https://twitter.com/tochirinuru" target="_blank">とちりぬる</a>.'
+			});
+
+			// ポリゴンレイヤのフィル表示設定
+			map.addLayer({
+				'id': 'lfalist_fills',
+				'type': 'fill',
+				'source': 'lfalist',
+				'source-layer': 'lfalist_pl',
+				'layout': {
+					'visibility': 'visible'
+				},
+				'paint': {
+					'fill-color': 'rgba(0, 90, 255, 1)',
+					'fill-opacity': 0.2
+				}
+			});
+
+			// ポリゴンレイヤのライン表示設定
+			map.addLayer({
+				'id': 'lfalist_lines',
+				'type': 'line',
+				'source': 'lfalist',
+				'source-layer': 'lfalist_pl',
+				'layout': {
+					'visibility': 'visible'
+				},
+				'paint': {
+					'line-color': 'rgba(0, 90, 255, 1)',
+					'line-width': 2
+				}
+			});
+
+			// geojsonファイル読み込み
+			map.addSource('lfalist_pt', {
+				type: 'geojson',
+				data: './geofiles/lfalist_pt.geojson',
+				attribution: 'Produced by <a href="https://twitter.com/tochirinuru" target="_blank">とちりぬる</a>.'
+			});
+
+			// ポイントレイヤのシンボル表示設定
+			map.addLayer({
+				'id': 'lfalist_points',
+				'type': 'symbol',
+				'source': 'lfalist_pt',
+				'layout': {
+					'text-field': ['get','label'],
+					'text-font': ['BIZ UDPGothic'],
+					'text-size': 16,
+
+				},
+				'paint': {
+					'text-color': 'rgba(0, 90, 255, 1)',
+					'text-halo-color': 'rgba(255, 255, 255, 0.7)',
+					'text-halo-width': 3
+				}
+			});
+
+			// ポイントレイヤのマウスクリック時の属性表示動作
+			map.on('click', 'lfalist_points', function (e) {
+
+				// 属性設定
+				const title = e.features[0].properties['title'];
+				const pref = e.features[0].properties['pref'];
+				const label = e.features[0].properties['label'];
+				const img = e.features[0].properties['img'];
+				const text = e.features[0].properties['text'];
+				const url = e.features[0].properties['url'];
+
+				new maplibregl.Popup()
+					.setLngLat(e.lngLat)
+					.setHTML(
+						'<div class="popup-title_2">' + title +'</div>' +
+						'<table class="popup-table rounded-rect"><tr class="popup-trow"><th class="popup-tdata popup-sbj">都道府県</th><td class="popup-tdata">' + pref + '</td></tr>' +
+						'<tr class="popup-trow"><th class="popup-tdata popup-sbj">説明</th><td class="popup-tdata">' + text + '<br><a href="' + url + '" title="X" target="_blank">続きを読む</a></td></tr></table>' +
+						'<div class="popup-img"><a href="' + url + '" title="X" target="_blank"><img src="./mapimg/' + img + '_2.png" alt="' + title + '画像" title="' + title + '画像"></a></div>'
+					)
+					.addTo(map);
+			});
+
+			// ポリゴンレイヤの表示設定
+			switchlayer = function (lname) {
+				if (document.getElementById("cb" + lname).checked) {
+					map.setLayoutProperty(lname + '_fills', 'visibility', 'visible');
+					map.setLayoutProperty(lname + '_lines', 'visibility', 'visible');
+					map.setLayoutProperty(lname + '_points', 'visibility', 'visible');
+				} else {
+					map.setLayoutProperty(lname + '_fills', 'visibility', 'none');
+					map.setLayoutProperty(lname + '_lines', 'visibility', 'none');
+					map.setLayoutProperty(lname + '_points', 'visibility', 'none');
+				}
+			}
+
+		});
+
+		// ズームバー表示
+		map.addControl(new maplibregl.NavigationControl());
+
+		// フルスクリーンボタン表示
+		map.addControl(new maplibregl.FullscreenControl());
+
+		// 現在位置ボタン表示
+		map.addControl(new maplibregl.GeolocateControl({
+			positionOptions: {
+				enableHighAccuracy: false
+			},
+			fitBoundsOptions: {maxZoom: 6},
+			trackUserLocation: true,
+			showUserLocation: true
+		}));
+
+		// スケールバー表示
+		map.addControl(new maplibregl.ScaleControl(), 'bottom-right');
+
+	</script>
+
+</body>
+</html>
