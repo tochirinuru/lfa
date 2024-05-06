@@ -39,10 +39,11 @@
 
 ### 標高データ
 - 国土地理院（標高タイル）
-  - 地理院標高タイル
-    - URL: https://maps.gsi.go.jp/development/demtile.html
-    - 数値情報（国土基本情報）基盤地図情報（数値標高モデル）
+  - 標高タイル（基盤地図情報数値標高モデル））
     - 測量法に基づく国土地理院長承認（使用）R 5JHs 268
+    - URL: https://maps.gsi.go.jp/development/demtile.html
+    - DEM10B（1/2.5万地形図等高線に基づく）
+    - URL: https://maps.gsi.go.jp/development/hyokochi.html
 
 ### レイヤ
 - 国土地理院（ベクトルタイル提供実験）
