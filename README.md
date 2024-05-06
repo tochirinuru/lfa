@@ -3,12 +3,12 @@
 
 ## サイトの基本情報
 - サイト名: 日本地形ガイドMAP
-- URL: https://tochirinuru.com/lfa/
+- URL: https://tochirinuru.com/maps/lfa/
 
 ## サイトの概要および詳細
 - Xポスト（Twitterツイート）上で日本の地形を簡単に解説している地点を表示するWeb地図サイトです。
 - 詳細については下記ページを参照してください。
-- URL: https://tochirinuru.com/lfa/overview.html
+- URL: https://tochirinuru.com/maps/lfa/overview.html
 
 ## ディレクトリ・ファイル構成
 - /（root）
