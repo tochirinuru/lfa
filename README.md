@@ -70,4 +70,4 @@
     - URL: https://cyberjapandata.gsi.go.jp/legend/lcm25k_2012/lc_legend.pdf
 
 ## 更新履歴
-- 2024-05-05（Ver.1.0.0）: サイト公開
+- 2024-05-06（Ver.1.0.0）: サイト公開
